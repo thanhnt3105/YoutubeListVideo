@@ -1,7 +1,7 @@
 import axios from "axios";
 
 
-const APIKey = 'AIzaSyCA34YHKhuWEPIj0PzWlbKCmzsqVdd2GRQ';
+const APIKey = 'AIzaSyAqLYjRu8bziOPMgzUxoo6pqTC8mzWmylQ';
 const inputUrl = 'https://www.youtube.com/c/TaynguyenSoundOfficial' ;
 const youtubeUrl = 'https://youtube.googleapis.com/youtube/v3' ;
 
@@ -33,22 +33,31 @@ async function getPlaylistArr(){
   let playlistIdSet=[];
   const paramGetPlaylistArr = {
     part:'snippet%2CcontentDetails',
-    maxResults:'50',
+    maxResults:'5',
   }
   const channelID = await getChannelId();
   console.log("channelID",channelID);
-  axios.get(
-    `${youtubeUrl}/playlists?part=${paramGetPlaylistArr.part}&channelId=${channelID}&maxResults=${paramGetPlaylistArr.maxResults}&key=${APIKey}`)
-  .then((res)=>{
+  try {
+    const res = await axios.get(
+      `${youtubeUrl}/playlists?part=${paramGetPlaylistArr.part}&channelId=${channelID}&maxResults=${paramGetPlaylistArr.maxResults}&key=${APIKey}`);
+    console.log("res.data",res.data);
+    let nextPageToken = res.data.nextPageToken;
+    console.log("nextPageToken",nextPageToken);
     playlistIdSet.push(res.data.items.map((item)=>item.id));
-    console.log("playlistIdSet",playlistIdSet);
-  })
-  .catch((err)=>{
-    console.log("err",err);
-  })
-  return playlistIdSet;
+    while(nextPageToken){
+      const nextPage = await axios.get(`${youtubeUrl}/playlists?part=${paramGetPlaylistArr.part}&channelId=${channelID}&maxResults=${paramGetPlaylistArr.maxResults}&pageToken=${nextPageToken}&key=${APIKey}`)
+      console.log("nextPage",nextPage.data);
+      playlistIdSet.push(nextPage.data.items.map((item)=>item.id));
+      if(nextPage.data.nextPageToken) {
+        nextPageToken = nextPage.data.nextPageToken;
+      }
+      else nextPageToken=null;
+    }
+  } catch (error) {
+    
+  }
+  return playlistIdSet.flat();
 }
-getPlaylistArr();
-
-//-Save playlist url to arr with pagination
+const result = await getPlaylistArr();
+console.log("result",result);
 
